@@ -48,8 +48,6 @@ public class UserAgentAnalyzer2 extends Analyzer {
 
     private UserAgentResource userAgentResource;
 
-    private LRUMap<String, UserAgent> parseCache = new LRUMap<>(DEFAULT_PARSE_CACHE_SIZE);
-
     public UserAgentAnalyzer2(UserAgentResource userAgentResource) {
        this.userAgentResource = userAgentResource;
 
@@ -177,42 +175,16 @@ config:
         return cachedParse(userAgent);
     }
 
-    public void disableCaching() {
-        setCacheSize(0);
-    }
-
-    /**
-     * Sets the new size of the parsing cache.
-     * Note that this will also wipe the existing cache.
-     * @param newCacheSize The size of the new LRU cache. As size of 0 will disable caching.
-     */
-    public void setCacheSize(int newCacheSize) {
-        if (newCacheSize >= 1) {
-            parseCache = new LRUMap<>(newCacheSize);
-        } else {
-            parseCache = null;
-        }
-    }
-
-    public int getCacheSize() {
-        if (parseCache == null) {
-            return 0;
-        }
-        return parseCache.maxSize();
-    }
 
     private synchronized UserAgent cachedParse(UserAgent userAgent) {
-        if (parseCache == null) {
-            return nonCachedParse(userAgent);
-        }
 
         String userAgentString = userAgent.getUserAgentString();
-        UserAgent cachedValue = parseCache.get(userAgentString);
+        UserAgent cachedValue = userAgentResource.getfromCache(userAgentString);
         if (cachedValue != null) {
             userAgent.clone(cachedValue);
         } else {
             cachedValue = new UserAgent(nonCachedParse(userAgent));
-            parseCache.put(userAgentString, cachedValue);
+            userAgentResource.putUserAgentToCache(userAgentString, cachedValue);
         }
         // We have our answer.
         return userAgent;

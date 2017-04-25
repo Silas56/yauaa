@@ -17,6 +17,8 @@
 
 package nl.basjes.parse.useragent;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import nl.basjes.parse.useragent.analyze.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.slf4j.Logger;
@@ -28,12 +30,14 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static nl.basjes.parse.useragent.UserAgent.*;
 
 public class UserAgentResource   extends Analyzer{
 
     private static final int INFORM_ACTIONS_HASHMAP_SIZE = 300000;
+    private static final int DEFAULT_PARSE_CACHE_SIZE = 10000*50;
 
     private static final Logger LOG = LoggerFactory.getLogger(UserAgentResource.class);
     protected List<Matcher>                     allMatchers             = new ArrayList<>();
@@ -50,14 +54,10 @@ public class UserAgentResource   extends Analyzer{
 
     private Yaml yaml;
 
-    public UserAgentResource() {
-        this(true);
-    }
+    private com.google.common.cache.LoadingCache<String, UserAgent> parseCache2;
 
-    protected UserAgentResource(boolean initialize) {
-        if (initialize) {
-            initialize(true);
-        }
+    public UserAgentResource() {
+        initialize(true);
     }
 
     public List<Matcher> getAllMatchers(){
@@ -76,6 +76,25 @@ public class UserAgentResource   extends Analyzer{
     protected void initialize(boolean showMatcherStats) {
         logVersion();
         loadResources("classpath*:UserAgents/**/*.yaml", showMatcherStats);
+        parseCache2 = CacheBuilder.newBuilder()
+                .maximumSize(DEFAULT_PARSE_CACHE_SIZE)
+                .expireAfterAccess(30, TimeUnit.MINUTES)
+                .build(new UserAgentCacheLoader());
+    }
+
+    public UserAgent getfromCache(String ua){
+        try{
+            parseCache2.get(ua);
+        }catch (Exception e){
+        }
+        return null;
+    }
+
+    public void putUserAgentToCache(String ua, UserAgent userAgent){
+        try{
+            parseCache2.put(ua, userAgent);
+        }catch (Exception e){
+        }
     }
 
     public UserAgentResource(String resourceString) {
@@ -435,12 +454,8 @@ config:
     }
 
 
-    private boolean verbose = false;
+    private final static boolean verbose = false;
 
-    public void setVerbose(boolean newVerbose) {
-        this.verbose = newVerbose;
-
-    }
 
     public void informMeAbout(MatcherAction matcherAction, String keyPattern) {
         String hashKey = keyPattern.toLowerCase();
@@ -459,19 +474,19 @@ config:
 
     private void inform(String match, String key, String value, ParseTree ctx) {
         Set<MatcherAction> relevantActions = informMatcherActions.get(match.toLowerCase());
-        if (verbose) {
-            if (relevantActions == null) {
-                LOG.info("--- Have (0): {}", match);
-            } else {
-                LOG.info("+++ Have ({}): {}", relevantActions.size(), match);
-
-                int count = 1;
-                for (MatcherAction action: relevantActions) {
-                    LOG.info("+++ -------> ({}): {}", count, action.toString());
-                    count++;
-                }
-            }
-        }
+//        if (verbose) {
+//            if (relevantActions == null) {
+//                LOG.info("--- Have (0): {}", match);
+//            } else {
+//                LOG.info("+++ Have ({}): {}", relevantActions.size(), match);
+//
+//                int count = 1;
+//                for (MatcherAction action: relevantActions) {
+//                    LOG.info("+++ -------> ({}): {}", count, action.toString());
+//                    count++;
+//                }
+//            }
+//        }
 
         if (relevantActions != null) {
             for (MatcherAction matcherAction : relevantActions) {
@@ -496,5 +511,13 @@ config:
     }
 
 
+    private static class UserAgentCacheLoader extends CacheLoader<String, UserAgent> {
+        public UserAgentCacheLoader() {
+        }
+        @Override
+        public UserAgent load(String key) throws Exception {
+            return null;
+        }
+    }
 
 }
