@@ -21,21 +21,17 @@ import nl.basjes.parse.useragent.UserAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static nl.basjes.parse.useragent.UserAgent.SET_ALL_FIELDS;
 
 public class Matcher {
     private static final Logger LOG = LoggerFactory.getLogger(Matcher.class);
 
-    private final Analyzer analyzer;
+    private Analyzer analyzer;
     private final List<MatcherAction> dynamicActions;
     private final List<MatcherAction> fixedStringActions;
-
+  //  private final Set<String> wantedFieldNames;
     // Set this to true if there is a reason not to trust the 'can possibly be valid'
     // One reason is if there is an IsNull check used somewhere.
     private boolean forceEvaluation = false;
@@ -43,19 +39,39 @@ public class Matcher {
     private boolean verbose;
     private boolean permanentVerbose;
 
+    public Matcher Clone(Analyzer analyzer){
+        this.analyzer = analyzer;
+        Matcher matcher = new Matcher(this.analyzer, this.lookups);
+
+        matcher.dynamicActions.addAll(this.dynamicActions);
+        matcher.fixedStringActions.addAll(this.fixedStringActions);
+
+        matcher.forceEvaluation = this.forceEvaluation;
+        matcher.verbose = this.verbose;
+        matcher.permanentVerbose = this.permanentVerbose;
+
+        return matcher;
+    }
+
     // Package private constructor for testing purposes only
     Matcher(Analyzer analyzer, Map<String, Map<String, String>> lookups) {
-        this.lookups = lookups;
+      //  this.lookups = lookups;
+        this.lookups = new HashMap<String, Map<String, String>>();
+        this.lookups.putAll(lookups);
         this.analyzer = analyzer;
         this.fixedStringActions = new ArrayList<>();
         this.dynamicActions = new ArrayList<>();
+
     }
 
     public Matcher(Analyzer analyzer,
                    Map<String, Map<String, String>> lookups,
                    Set<String> wantedFieldNames,
                    Map<String, List<String>> matcherConfig) throws UselessMatcherException {
-        this.lookups = lookups;
+       // this.lookups = lookups;
+        this.lookups = new HashMap<String, Map<String, String>>();
+        this.lookups.putAll(lookups);
+
         this.analyzer = analyzer;
         this.fixedStringActions = new ArrayList<>();
         this.dynamicActions = new ArrayList<>();
@@ -187,6 +203,10 @@ public class Matcher {
     public void informMeAbout(MatcherAction matcherAction, String keyPattern) {
         if (verbose) {
             LOG.info("Requested: {}", keyPattern);
+        }
+        if (analyzer == null){
+            LOG.info("analyzer is null: {}", keyPattern);
+            return;
         }
         analyzer.informMeAbout(matcherAction, keyPattern);
     }
