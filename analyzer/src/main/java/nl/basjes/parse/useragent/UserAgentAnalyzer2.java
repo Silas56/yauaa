@@ -57,7 +57,7 @@ public class UserAgentAnalyzer2 extends Analyzer {
 
     private void init(){
 
-        LOG.info("Building all init");
+  //      LOG.info("Building all init");
 
         flattener = new UserAgentTreeFlattener(this);
 

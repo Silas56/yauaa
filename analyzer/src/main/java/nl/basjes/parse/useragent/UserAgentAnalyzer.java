@@ -83,7 +83,7 @@ public class UserAgentAnalyzer extends Analyzer {
     protected Set<String> wantedFieldNames = null;
 
     protected final List<Map<String, Map<String, String>>> testCases    = new ArrayList<>(2048);
-    private Map<String, Map<String, String>> lookups2                    = new HashMap<>(128);
+    private Map<String, Map<String, String>> lookups                    = new HashMap<>(128);
 
     protected UserAgentTreeFlattener flattener;
 
@@ -187,17 +187,17 @@ public class UserAgentAnalyzer extends Analyzer {
         }
         LOG.info("Loaded {} files", resources.size());
 
-        if (lookups2 != null && !lookups2.isEmpty()) {
+        if (lookups != null && !lookups.isEmpty()) {
             // All compares are done in a case insensitive way. So we lowercase ALL keys of the lookups beforehand.
-            Map<String, Map<String, String>> cleanedLookups = new HashMap<>(lookups2.size());
-            for (Map.Entry<String, Map<String, String>> lookupsEntry : lookups2.entrySet()) {
+            Map<String, Map<String, String>> cleanedLookups = new HashMap<>(lookups.size());
+            for (Map.Entry<String, Map<String, String>> lookupsEntry : lookups.entrySet()) {
                 Map<String, String> cleanedLookup = new HashMap<>(lookupsEntry.getValue().size());
                 for (Map.Entry<String, String> entry : lookupsEntry.getValue().entrySet()) {
                     cleanedLookup.put(entry.getKey().toLowerCase(), entry.getValue());
                 }
                 cleanedLookups.put(lookupsEntry.getKey(), cleanedLookup);
             }
-            lookups2 = cleanedLookups;
+            lookups = cleanedLookups;
         }
 
         LOG.info("Building all matchers");
@@ -217,7 +217,7 @@ public class UserAgentAnalyzer extends Analyzer {
                 int startSize = informMatcherActions.size();
                 for (Map<String, List<String>> map : matcherConfig) {
                     try {
-                        allMatchers.add(new Matcher(this, lookups2, wantedFieldNames, map));
+                        allMatchers.add(new Matcher(this, lookups, wantedFieldNames, map));
                         totalNumberOfMatchers++;
                     } catch (UselessMatcherException ume) {
                         skippedMatchers++;
@@ -249,7 +249,7 @@ public class UserAgentAnalyzer extends Analyzer {
 
         }
         LOG.info("Analyzer stats");
-        LOG.info("Lookups      : {}", (lookups2 == null) ? 0 : lookups2.size());
+        LOG.info("Lookups      : {}", (lookups == null) ? 0 : lookups.size());
         LOG.info("Matchers     : {} (total:{} ; dropped: {})", allMatchers.size(), totalNumberOfMatchers, skippedMatchers);
         LOG.info("Hashmap size : {}", informMatcherActions.size());
         LOG.info("Testcases    : {}", testCases .size());
@@ -402,7 +402,7 @@ config:
 
                     @SuppressWarnings({"unchecked"}) // Ignoring the possibly wrong generic here
                     Map<String, String> map = (Map<String, String>)rawMap;
-                    lookups2.put((String)rawName, map);
+                    lookups.put((String)rawName, map);
                     break;
 
                 case "matcher":

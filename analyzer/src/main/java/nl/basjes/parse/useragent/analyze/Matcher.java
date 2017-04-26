@@ -21,7 +21,11 @@ import nl.basjes.parse.useragent.UserAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static nl.basjes.parse.useragent.UserAgent.SET_ALL_FIELDS;
 
@@ -31,7 +35,7 @@ public class Matcher {
     private Analyzer analyzer;
     private final List<MatcherAction> dynamicActions;
     private final List<MatcherAction> fixedStringActions;
-  //  private final Set<String> wantedFieldNames;
+
     // Set this to true if there is a reason not to trust the 'can possibly be valid'
     // One reason is if there is an IsNull check used somewhere.
     private boolean forceEvaluation = false;
@@ -46,32 +50,27 @@ public class Matcher {
         matcher.dynamicActions.addAll(this.dynamicActions);
         matcher.fixedStringActions.addAll(this.fixedStringActions);
 
-        matcher.forceEvaluation = this.forceEvaluation;
+        matcher.forceEvaluation = false;
         matcher.verbose = this.verbose;
-        matcher.permanentVerbose = this.permanentVerbose;
+        matcher.permanentVerbose = matcher.verbose;
 
         return matcher;
     }
 
+
     // Package private constructor for testing purposes only
     Matcher(Analyzer analyzer, Map<String, Map<String, String>> lookups) {
-      //  this.lookups = lookups;
-        this.lookups = new HashMap<String, Map<String, String>>();
-        this.lookups.putAll(lookups);
+        this.lookups = lookups;
         this.analyzer = analyzer;
         this.fixedStringActions = new ArrayList<>();
         this.dynamicActions = new ArrayList<>();
-
     }
 
     public Matcher(Analyzer analyzer,
                    Map<String, Map<String, String>> lookups,
                    Set<String> wantedFieldNames,
                    Map<String, List<String>> matcherConfig) throws UselessMatcherException {
-       // this.lookups = lookups;
-        this.lookups = new HashMap<String, Map<String, String>>();
-        this.lookups.putAll(lookups);
-
+        this.lookups = lookups;
         this.analyzer = analyzer;
         this.fixedStringActions = new ArrayList<>();
         this.dynamicActions = new ArrayList<>();
@@ -204,10 +203,6 @@ public class Matcher {
         if (verbose) {
             LOG.info("Requested: {}", keyPattern);
         }
-        if (analyzer == null){
-            LOG.info("analyzer is null: {}", keyPattern);
-            return;
-        }
         analyzer.informMeAbout(matcherAction, keyPattern);
     }
 
@@ -221,59 +216,60 @@ public class Matcher {
      */
     public void analyze(UserAgent userAgent) {
 
-        if (verbose) {
-            LOG.info("");
-            LOG.info("--- Matcher ------------------------");
-            LOG.info("ANALYSE ----------------------------");
+ //       if (verbose) {
+//            LOG.info("");
+//            LOG.info("--- Matcher ------------------------");
+//            LOG.info("ANALYSE ----------------------------");
             boolean good = true;
             for (MatcherAction action : dynamicActions) {
                 if (!action.canPossiblyBeValid()) {
-                    LOG.error("CANNOT BE VALID : {}", action.getMatchExpression());
+                  //  LOG.error("CANNOT BE VALID : {}", action.getMatchExpression());
                     good = false;
                 }
             }
             newValuesUserAgent.reset();
             for (MatcherAction action : dynamicActions) {
                 if (!action.obtainResult(newValuesUserAgent)) {
-                    LOG.error("FAILED : {}", action.getMatchExpression());
+                 //   LOG.error("FAILED : {}", action.getMatchExpression());
                     good = false;
                 }
             }
             for (MatcherAction action : fixedStringActions) {
                 if (!action.obtainResult(newValuesUserAgent)) {
-                    LOG.error("FAILED : {}", action.getMatchExpression());
+                  //  LOG.error("FAILED : {}", action.getMatchExpression());
                     good = false;
                 }
             }
             if (good) {
-                LOG.info("COMPLETE ----------------------------");
+              //  LOG.info("COMPLETE ----------------------------");
             } else  {
-                LOG.info("INCOMPLETE ----------------------------");
+             //   LOG.info("INCOMPLETE ----------------------------");
                 return;
             }
-        } else {
-            if (!forceEvaluation) {
-                if (!possiblyValid) {
-                    return;
-                }
-            }
-            for (MatcherAction action : dynamicActions) {
-                if (!action.canPossiblyBeValid()) {
-                    return; // If one of them is bad we skip the rest
-                }
-            }
-            newValuesUserAgent.reset();
-            for (MatcherAction action : dynamicActions) {
-                if (!action.obtainResult(newValuesUserAgent)) {
-                    return; // If one of them is bad we skip the rest
-                }
-            }
-            for (MatcherAction action : fixedStringActions) {
-                if (!action.obtainResult(newValuesUserAgent)) {
-                    return; // If one of them is bad we skip the rest
-                }
-            }
-        }
+  //      }
+//        else {
+//            if (!forceEvaluation) {
+//                if (!possiblyValid) {
+//                    return;
+//                }
+//            }
+//            for (MatcherAction action : dynamicActions) {
+//                if (!action.canPossiblyBeValid()) {
+//                    return; // If one of them is bad we skip the rest
+//                }
+//            }
+//            newValuesUserAgent.reset();
+//            for (MatcherAction action : dynamicActions) {
+//                if (!action.obtainResult(newValuesUserAgent)) {
+//                    return; // If one of them is bad we skip the rest
+//                }
+//            }
+//            for (MatcherAction action : fixedStringActions) {
+//                if (!action.obtainResult(newValuesUserAgent)) {
+//                    return; // If one of them is bad we skip the rest
+//                }
+//            }
+//        }
         userAgent.set(newValuesUserAgent, this);
     }
 
