@@ -35,8 +35,24 @@ public class MatcherExtractAction extends MatcherAction {
     public MatcherExtractAction(String attribute, long confidence, String config, Matcher matcher) {
         this.attribute = attribute;
         this.confidence = confidence;
-        expression = config;
+        this.expression = config;
         init(config, matcher);
+    }
+
+    public MatcherExtractAction(Matcher matcher,MatcherExtractAction action){
+        super(matcher,action);
+        this.attribute = action.attribute;
+        this.confidence = action.confidence;
+        this.expression = action.expression;
+
+    }
+
+    @Override
+    public MatcherExtractAction Clone(Matcher matcher){
+        MatcherExtractAction action = new MatcherExtractAction(matcher,this);
+        action.foundValue = this.foundValue;
+        action.fixedValue = this.fixedValue;
+        return action;
     }
 
     protected ParserRuleContext parseWalkerExpression(UserAgentTreeWalkerParser parser) {
@@ -53,6 +69,8 @@ public class MatcherExtractAction extends MatcherAction {
         }
         this.fixedValue = newFixedValue;
     }
+
+
 
     public String getAttribute() {
         return attribute;

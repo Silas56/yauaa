@@ -33,6 +33,15 @@ public class MatcherRequireAction extends MatcherAction {
 //        }
     }
 
+    public MatcherRequireAction(Matcher matcher,MatcherRequireAction action){
+        super(matcher,action);
+    }
+
+    @Override
+    public MatcherRequireAction Clone(Matcher matcher){
+        return new MatcherRequireAction(matcher,this);
+    }
+
     protected ParserRuleContext parseWalkerExpression(UserAgentTreeWalkerParser parser) {
         return parser.matcherRequire();
     }

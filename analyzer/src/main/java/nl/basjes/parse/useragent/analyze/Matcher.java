@@ -32,7 +32,7 @@ import static nl.basjes.parse.useragent.UserAgent.SET_ALL_FIELDS;
 public class Matcher {
     private static final Logger LOG = LoggerFactory.getLogger(Matcher.class);
 
-    private Analyzer analyzer;
+    private final Analyzer analyzer;
     private final List<MatcherAction> dynamicActions;
     private final List<MatcherAction> fixedStringActions;
 
@@ -44,15 +44,25 @@ public class Matcher {
     private boolean permanentVerbose;
 
     public Matcher Clone(Analyzer analyzer){
-        this.analyzer = analyzer;
         Matcher matcher = new Matcher(this.analyzer, this.lookups);
 
-        matcher.dynamicActions.addAll(this.dynamicActions);
-        matcher.fixedStringActions.addAll(this.fixedStringActions);
+//        matcher.dynamicActions.addAll(this.dynamicActions);
+//        matcher.fixedStringActions.addAll(this.fixedStringActions);
+
+        for (MatcherAction action:this.dynamicActions){
+            MatcherAction newAction = action.Clone(matcher);
+            newAction.reset();
+            matcher.dynamicActions.add(newAction);
+        }
+        for (MatcherAction action1:this.fixedStringActions){
+            MatcherAction newAction = action1.Clone(matcher);
+            newAction.reset();
+            matcher.fixedStringActions.add(newAction);
+        }
 
         matcher.forceEvaluation = false;
         matcher.verbose = this.verbose;
-        matcher.permanentVerbose = matcher.verbose;
+        matcher.permanentVerbose = this.permanentVerbose;
 
         return matcher;
     }

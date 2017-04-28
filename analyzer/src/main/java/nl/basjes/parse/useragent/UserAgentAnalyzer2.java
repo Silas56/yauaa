@@ -17,20 +17,18 @@
 
 package nl.basjes.parse.useragent;
 
-import nl.basjes.parse.useragent.analyze.*;
+import com.google.common.collect.Sets;
+import nl.basjes.parse.useragent.analyze.Analyzer;
+import nl.basjes.parse.useragent.analyze.Matcher;
+import nl.basjes.parse.useragent.analyze.MatcherAction;
 import nl.basjes.parse.useragent.parse.UserAgentTreeFlattener;
 import nl.basjes.parse.useragent.utils.Normalize;
 import nl.basjes.parse.useragent.utils.VersionSplitter;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.apache.commons.collections4.map.LRUMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.io.InputStream;
+
 import java.util.*;
 
 import static nl.basjes.parse.useragent.UserAgent.*;
@@ -41,12 +39,12 @@ public class UserAgentAnalyzer2 extends Analyzer {
     private static final int DEFAULT_PARSE_CACHE_SIZE = 10000;
 
     private static final Logger LOG = LoggerFactory.getLogger(UserAgentAnalyzer2.class);
-    protected List<Matcher>                     allMatchers             = new ArrayList<>();
-    private Map<String, Set<MatcherAction>>     informMatcherActions    = new HashMap<>(INFORM_ACTIONS_HASHMAP_SIZE);
+    protected List<Matcher> _allMatchers             = new ArrayList<>();
+    private Map<String, Set<MatcherAction>> informMatcherActions    = new HashMap<>(INFORM_ACTIONS_HASHMAP_SIZE);
 
     protected UserAgentTreeFlattener flattener;
 
-    private UserAgentResource userAgentResource;
+    private final UserAgentResource userAgentResource;
 
     public UserAgentAnalyzer2(UserAgentResource userAgentResource) {
        this.userAgentResource = userAgentResource;
@@ -61,13 +59,24 @@ public class UserAgentAnalyzer2 extends Analyzer {
 
         flattener = new UserAgentTreeFlattener(this);
 
-        final Map<String, Set<MatcherAction>> informMatcherActions = userAgentResource.getInformMatcherActions();
+        Map<String,Set<MatcherAction>> informMatcherActions = userAgentResource.getInformMatcherActions();
+//      //  informMatcherActions
+//        for (Map.Entry<String, Set<MatcherAction>> entryItem : informMatcherActions.entrySet()) {
+//            Set<MatcherAction> actions = entryItem.getValue();
+//            Set<MatcherAction> newActions = Sets.newHashSet();
+//            for (MatcherAction action:actions){
+//                newActions.add(action.Clone(null));
+//            }
+//
+//            this.informMatcherActions.put(entryItem.getKey(), newActions);
+//        }
+
         this.informMatcherActions.putAll(informMatcherActions);
 
         List<Matcher> allMatchers = userAgentResource.getAllMatchers();
         for (Matcher matcher:allMatchers){
             Matcher cloneMatcher = matcher.Clone(this);
-            this.allMatchers.add(cloneMatcher);
+            this._allMatchers.add(cloneMatcher);
         }
 
     }
@@ -96,7 +105,7 @@ public class UserAgentAnalyzer2 extends Analyzer {
     public Set<String> getAllPossibleFieldNames() {
         Set<String> results = new TreeSet<>();
         results.addAll(UserAgentResource.HARD_CODED_GENERATED_FIELDS);
-        for (Matcher matcher: allMatchers) {
+        for (Matcher matcher: _allMatchers) {
             results.addAll(matcher.getAllPossibleFieldNames());
         }
         return results;
@@ -149,13 +158,13 @@ config:
 */
 
     public void informMeAbout(MatcherAction matcherAction, String keyPattern) {
-        String hashKey = keyPattern.toLowerCase();
-        Set<MatcherAction> analyzerSet = informMatcherActions.get(hashKey);
-        if (analyzerSet == null) {
-            analyzerSet = new HashSet<>();
-            informMatcherActions.put(hashKey, analyzerSet);
-        }
-        analyzerSet.add(matcherAction);
+//        String hashKey = keyPattern.toLowerCase();
+//        Set<MatcherAction> analyzerSet = informMatcherActions.get(hashKey);
+//        if (analyzerSet == null) {
+//            analyzerSet = new HashSet<>();
+//            informMatcherActions.put(hashKey, analyzerSet);
+//        }
+//        analyzerSet.add(matcherAction);
     }
 
     private boolean verbose = false;
@@ -195,14 +204,14 @@ config:
         boolean setVerboseTemporarily = userAgent.isDebug();
 
         // Reset all Matchers
-        for (Matcher matcher : allMatchers) {
+        for (Matcher matcher : _allMatchers) {
             matcher.reset(setVerboseTemporarily);
         }
 
         userAgent = flattener.parse(userAgent);
 
         // Fire all Analyzers
-        for (Matcher matcher : allMatchers) {
+        for (Matcher matcher : _allMatchers) {
             matcher.analyze(userAgent);
         }
 

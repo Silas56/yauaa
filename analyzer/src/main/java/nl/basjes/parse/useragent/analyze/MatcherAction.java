@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.List;
 
 import static nl.basjes.parse.useragent.parser.UserAgentTreeWalkerParser.BasePathContext;
@@ -85,6 +86,11 @@ public abstract class MatcherAction {
             this.key = key;
             this.value = value;
             this.result = result;
+        }
+
+        public Match Clone(){
+            Match match = new Match(this.key,this.value,this.result);
+            return match;
         }
 
         public String getKey() {
@@ -173,6 +179,17 @@ public abstract class MatcherAction {
                 ATNConfigSet configs) {
 
         }
+    }
+
+    public MatcherAction(){
+
+    }
+
+    public MatcherAction(Matcher matcher,MatcherAction action){
+        if (matcher != null)
+            this.init(action.matchExpression, matcher);
+        else
+            this.init(action.matchExpression, action.matcher);
     }
 
     void init(String newMatchExpression, Matcher newMatcher) {
@@ -270,6 +287,8 @@ public abstract class MatcherAction {
 
     protected abstract void setFixedValue(String newFixedValue);
 
+    public abstract MatcherAction Clone(Matcher matcher);
+
     /**
      * For each key that this action wants to be notified for this method is called.
      * Note that on a single parse event the same name CAN be called multiple times!!
@@ -314,13 +333,23 @@ public abstract class MatcherAction {
      * actually perform the analysis and do the (expensive) tree walking and matching.
      */
     void processInformedMatches() {
-        for (Match match : matches) {
+
+        for (Iterator<Match> iterator = matches.iterator(); iterator.hasNext(); ) {
+            Match match = iterator.next();
             String matchedValue = evaluator.evaluate(match.result, match.key, match.value);
             if (matchedValue != null) {
                 inform(match.key, matchedValue);
                 break; // We always stick to the first match
             }
         }
+//
+//        for (Match match : matches) {
+//            String matchedValue = evaluator.evaluate(match.result, match.key, match.value);
+//            if (matchedValue != null) {
+//                inform(match.key, matchedValue);
+//                break; // We always stick to the first match
+//            }
+//        }
     }
 
 
@@ -433,7 +462,12 @@ public abstract class MatcherAction {
 
     public void reset() {
         if (!matches.isEmpty()) {
-            matches.clear();
+            Iterator<Match> iter = matches.iterator();
+            while (iter.hasNext()) {
+                iter.remove();
+            }
+
+        //    matches.clear();
         }
         if (verboseTemporary) {
             verbose = verbosePermanent;
