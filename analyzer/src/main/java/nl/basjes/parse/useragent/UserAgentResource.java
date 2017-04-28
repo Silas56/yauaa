@@ -84,7 +84,12 @@ public class UserAgentResource   extends Analyzer{
 
     public UserAgent getfromCache(String ua){
         try{
-            parseCache2.get(ua);
+            UserAgent userAgent = parseCache2.get(ua);
+            if (userAgent != null){
+                UserAgent newAgent = new UserAgent();
+                newAgent.clone(userAgent);
+                return newAgent;
+            }
         }catch (Exception e){
         }
         return null;
