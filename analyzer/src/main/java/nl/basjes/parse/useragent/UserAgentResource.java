@@ -78,7 +78,7 @@ public class UserAgentResource   extends Analyzer{
         loadResources("classpath*:UserAgents/**/*.yaml", showMatcherStats);
         parseCache2 = CacheBuilder.newBuilder()
                 .maximumSize(DEFAULT_PARSE_CACHE_SIZE)
-                .expireAfterAccess(30, TimeUnit.MINUTES)
+                .expireAfterAccess(10, TimeUnit.MINUTES)
                 .build(new UserAgentCacheLoader());
     }
 
